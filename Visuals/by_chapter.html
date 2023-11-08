@@ -1,0 +1,819 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 1450px;
+                 height: 690px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 1450px;
+                 height: 690px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="Isaiah 1">Isaiah 1</option>
+                                
+                                    <option value="1 Nephi 19">1 Nephi 19</option>
+                                
+                                    <option value="2 Nephi 11">2 Nephi 11</option>
+                                
+                                    <option value="2 Nephi 13">2 Nephi 13</option>
+                                
+                                    <option value="2 Nephi 15">2 Nephi 15</option>
+                                
+                                    <option value="2 Nephi 19">2 Nephi 19</option>
+                                
+                                    <option value="2 Nephi 25">2 Nephi 25</option>
+                                
+                                    <option value="2 Nephi 6">2 Nephi 6</option>
+                                
+                                    <option value="3 Nephi 20">3 Nephi 20</option>
+                                
+                                    <option value="Alma 60">Alma 60</option>
+                                
+                                    <option value="Helaman 7">Helaman 7</option>
+                                
+                                    <option value="Mosiah 11">Mosiah 11</option>
+                                
+                                    <option value="Isaiah 2">Isaiah 2</option>
+                                
+                                    <option value="2 Nephi 21">2 Nephi 21</option>
+                                
+                                    <option value="2 Nephi 8">2 Nephi 8</option>
+                                
+                                    <option value="3 Nephi 21">3 Nephi 21</option>
+                                
+                                    <option value="2 Nephi 12">2 Nephi 12</option>
+                                
+                                    <option value="Isaiah 3">Isaiah 3</option>
+                                
+                                    <option value="Alma 4">Alma 4</option>
+                                
+                                    <option value="Alma 31">Alma 31</option>
+                                
+                                    <option value="Isaiah 4">Isaiah 4</option>
+                                
+                                    <option value="2 Nephi 23">2 Nephi 23</option>
+                                
+                                    <option value="2 Nephi 14">2 Nephi 14</option>
+                                
+                                    <option value="Isaiah 5">Isaiah 5</option>
+                                
+                                    <option value="Moroni 7">Moroni 7</option>
+                                
+                                    <option value="Jacob 5">Jacob 5</option>
+                                
+                                    <option value="Helaman 16">Helaman 16</option>
+                                
+                                    <option value="2 Nephi 29">2 Nephi 29</option>
+                                
+                                    <option value="1 Nephi 22">1 Nephi 22</option>
+                                
+                                    <option value="2 Nephi 20">2 Nephi 20</option>
+                                
+                                    <option value="Helaman 15">Helaman 15</option>
+                                
+                                    <option value="2 Nephi 18">2 Nephi 18</option>
+                                
+                                    <option value="Isaiah 6">Isaiah 6</option>
+                                
+                                    <option value="2 Nephi 16">2 Nephi 16</option>
+                                
+                                    <option value="Alma 36">Alma 36</option>
+                                
+                                    <option value="Mosiah 27">Mosiah 27</option>
+                                
+                                    <option value="Isaiah 7">Isaiah 7</option>
+                                
+                                    <option value="Alma 30">Alma 30</option>
+                                
+                                    <option value="Helaman 6">Helaman 6</option>
+                                
+                                    <option value="Alma 8">Alma 8</option>
+                                
+                                    <option value="Alma 7">Alma 7</option>
+                                
+                                    <option value="Alma 5">Alma 5</option>
+                                
+                                    <option value="Alma 45">Alma 45</option>
+                                
+                                    <option value="Alma 43">Alma 43</option>
+                                
+                                    <option value="Alma 35">Alma 35</option>
+                                
+                                    <option value="Alma 32">Alma 32</option>
+                                
+                                    <option value="Mosiah 17">Mosiah 17</option>
+                                
+                                    <option value="Alma 10">Alma 10</option>
+                                
+                                    <option value="Alma 24">Alma 24</option>
+                                
+                                    <option value="Alma 2">Alma 2</option>
+                                
+                                    <option value="Alma 17">Alma 17</option>
+                                
+                                    <option value="Alma 33">Alma 33</option>
+                                
+                                    <option value="Mosiah 18">Mosiah 18</option>
+                                
+                                    <option value="Mosiah 24">Mosiah 24</option>
+                                
+                                    <option value="Alma 14">Alma 14</option>
+                                
+                                    <option value="2 Nephi 17">2 Nephi 17</option>
+                                
+                                    <option value="Mosiah 23">Mosiah 23</option>
+                                
+                                    <option value="Alma 12">Alma 12</option>
+                                
+                                    <option value="Mosiah 29">Mosiah 29</option>
+                                
+                                    <option value="Mosiah 26">Mosiah 26</option>
+                                
+                                    <option value="Mosiah 25">Mosiah 25</option>
+                                
+                                    <option value="Alma 1">Alma 1</option>
+                                
+                                    <option value="Isaiah 8">Isaiah 8</option>
+                                
+                                    <option value="Jacob 4">Jacob 4</option>
+                                
+                                    <option value="Isaiah 9">Isaiah 9</option>
+                                
+                                    <option value="Mosiah 15">Mosiah 15</option>
+                                
+                                    <option value="Mosiah 7">Mosiah 7</option>
+                                
+                                    <option value="2 Nephi 9">2 Nephi 9</option>
+                                
+                                    <option value="Alma 11">Alma 11</option>
+                                
+                                    <option value="Isaiah 10">Isaiah 10</option>
+                                
+                                    <option value="Omni 1">Omni 1</option>
+                                
+                                    <option value="Mosiah 4">Mosiah 4</option>
+                                
+                                    <option value="2 Nephi 24">2 Nephi 24</option>
+                                
+                                    <option value="Isaiah 11">Isaiah 11</option>
+                                
+                                    <option value="1 Nephi 21">1 Nephi 21</option>
+                                
+                                    <option value="1 Nephi 1">1 Nephi 1</option>
+                                
+                                    <option value="2 Nephi 10">2 Nephi 10</option>
+                                
+                                    <option value="2 Nephi 30">2 Nephi 30</option>
+                                
+                                    <option value="2 Nephi 7">2 Nephi 7</option>
+                                
+                                    <option value="3 Nephi 16">3 Nephi 16</option>
+                                
+                                    <option value="Isaiah 12">Isaiah 12</option>
+                                
+                                    <option value="2 Nephi 22">2 Nephi 22</option>
+                                
+                                    <option value="Isaiah 13">Isaiah 13</option>
+                                
+                                    <option value="Isaiah 14">Isaiah 14</option>
+                                
+                                    <option value="Ether 14">Ether 14</option>
+                                
+                                    <option value="2 Nephi 2">2 Nephi 2</option>
+                                
+                                    <option value="Isaiah 17">Isaiah 17</option>
+                                
+                                    <option value="Isaiah 18">Isaiah 18</option>
+                                
+                                    <option value="Isaiah 19">Isaiah 19</option>
+                                
+                                    <option value="Isaiah 21">Isaiah 21</option>
+                                
+                                    <option value="Isaiah 22">Isaiah 22</option>
+                                
+                                    <option value="2 Nephi 28">2 Nephi 28</option>
+                                
+                                    <option value="Isaiah 24">Isaiah 24</option>
+                                
+                                    <option value="3 Nephi 25">3 Nephi 25</option>
+                                
+                                    <option value="Jacob 6">Jacob 6</option>
+                                
+                                    <option value="2 Nephi 27">2 Nephi 27</option>
+                                
+                                    <option value="Isaiah 25">Isaiah 25</option>
+                                
+                                    <option value="Mosiah 16">Mosiah 16</option>
+                                
+                                    <option value="Mormon 7">Mormon 7</option>
+                                
+                                    <option value="Alma 22">Alma 22</option>
+                                
+                                    <option value="Isaiah 26">Isaiah 26</option>
+                                
+                                    <option value="Mosiah 13">Mosiah 13</option>
+                                
+                                    <option value="Helaman 3">Helaman 3</option>
+                                
+                                    <option value="Alma 40">Alma 40</option>
+                                
+                                    <option value="Isaiah 27">Isaiah 27</option>
+                                
+                                    <option value="Ether 13">Ether 13</option>
+                                
+                                    <option value="Isaiah 28">Isaiah 28</option>
+                                
+                                    <option value="Helaman 5">Helaman 5</option>
+                                
+                                    <option value="Isaiah 29">Isaiah 29</option>
+                                
+                                    <option value="Moroni 10">Moroni 10</option>
+                                
+                                    <option value="Mormon 8">Mormon 8</option>
+                                
+                                    <option value="1 Nephi 14">1 Nephi 14</option>
+                                
+                                    <option value="2 Nephi 33">2 Nephi 33</option>
+                                
+                                    <option value="2 Nephi 3">2 Nephi 3</option>
+                                
+                                    <option value="2 Nephi 26">2 Nephi 26</option>
+                                
+                                    <option value="Isaiah 30">Isaiah 30</option>
+                                
+                                    <option value="Helaman 13">Helaman 13</option>
+                                
+                                    <option value="Isaiah 31">Isaiah 31</option>
+                                
+                                    <option value="Isaiah 32">Isaiah 32</option>
+                                
+                                    <option value="Isaiah 33">Isaiah 33</option>
+                                
+                                    <option value="Mosiah 12">Mosiah 12</option>
+                                
+                                    <option value="Isaiah 34">Isaiah 34</option>
+                                
+                                    <option value="Isaiah 35">Isaiah 35</option>
+                                
+                                    <option value="Mormon 3">Mormon 3</option>
+                                
+                                    <option value="Isaiah 36">Isaiah 36</option>
+                                
+                                    <option value="Isaiah 37">Isaiah 37</option>
+                                
+                                    <option value="Isaiah 38">Isaiah 38</option>
+                                
+                                    <option value="Helaman 12">Helaman 12</option>
+                                
+                                    <option value="Isaiah 40">Isaiah 40</option>
+                                
+                                    <option value="1 Nephi 10">1 Nephi 10</option>
+                                
+                                    <option value="1 Nephi 15">1 Nephi 15</option>
+                                
+                                    <option value="3 Nephi 22">3 Nephi 22</option>
+                                
+                                    <option value="Helaman 14">Helaman 14</option>
+                                
+                                    <option value="Isaiah 41">Isaiah 41</option>
+                                
+                                    <option value="1 Nephi 20">1 Nephi 20</option>
+                                
+                                    <option value="Isaiah 42">Isaiah 42</option>
+                                
+                                    <option value="1 Nephi 13">1 Nephi 13</option>
+                                
+                                    <option value="Isaiah 43">Isaiah 43</option>
+                                
+                                    <option value="Isaiah 44">Isaiah 44</option>
+                                
+                                    <option value="1 Nephi 17">1 Nephi 17</option>
+                                
+                                    <option value="3 Nephi 19">3 Nephi 19</option>
+                                
+                                    <option value="Isaiah 45">Isaiah 45</option>
+                                
+                                    <option value="Mosiah 3">Mosiah 3</option>
+                                
+                                    <option value="Ether 4">Ether 4</option>
+                                
+                                    <option value="Alma 34">Alma 34</option>
+                                
+                                    <option value="3 Nephi 13">3 Nephi 13</option>
+                                
+                                    <option value="Alma 26">Alma 26</option>
+                                
+                                    <option value="3 Nephi 11">3 Nephi 11</option>
+                                
+                                    <option value="Isaiah 46">Isaiah 46</option>
+                                
+                                    <option value="Isaiah 48">Isaiah 48</option>
+                                
+                                    <option value="Alma 37">Alma 37</option>
+                                
+                                    <option value="1 Nephi 9">1 Nephi 9</option>
+                                
+                                    <option value="Isaiah 49">Isaiah 49</option>
+                                
+                                    <option value="3 Nephi 23">3 Nephi 23</option>
+                                
+                                    <option value="Isaiah 50">Isaiah 50</option>
+                                
+                                    <option value="Isaiah 51">Isaiah 51</option>
+                                
+                                    <option value="Isaiah 52">Isaiah 52</option>
+                                
+                                    <option value="Isaiah 53">Isaiah 53</option>
+                                
+                                    <option value="Mosiah 14">Mosiah 14</option>
+                                
+                                    <option value="Helaman 8">Helaman 8</option>
+                                
+                                    <option value="Isaiah 54">Isaiah 54</option>
+                                
+                                    <option value="Jacob 2">Jacob 2</option>
+                                
+                                    <option value="Isaiah 55">Isaiah 55</option>
+                                
+                                    <option value="3 Nephi 12">3 Nephi 12</option>
+                                
+                                    <option value="Ether 3">Ether 3</option>
+                                
+                                    <option value="Isaiah 57">Isaiah 57</option>
+                                
+                                    <option value="Alma 41">Alma 41</option>
+                                
+                                    <option value="Isaiah 58">Isaiah 58</option>
+                                
+                                    <option value="Alma 29">Alma 29</option>
+                                
+                                    <option value="2 Nephi 1">2 Nephi 1</option>
+                                
+                                    <option value="3 Nephi 18">3 Nephi 18</option>
+                                
+                                    <option value="Isaiah 59">Isaiah 59</option>
+                                
+                                    <option value="Alma 39">Alma 39</option>
+                                
+                                    <option value="Alma 42">Alma 42</option>
+                                
+                                    <option value="3 Nephi 24">3 Nephi 24</option>
+                                
+                                    <option value="Alma 9">Alma 9</option>
+                                
+                                    <option value="3 Nephi 9">3 Nephi 9</option>
+                                
+                                    <option value="Isaiah 60">Isaiah 60</option>
+                                
+                                    <option value="Ether 2">Ether 2</option>
+                                
+                                    <option value="Isaiah 61">Isaiah 61</option>
+                                
+                                    <option value="Isaiah 62">Isaiah 62</option>
+                                
+                                    <option value="Isaiah 64">Isaiah 64</option>
+                                
+                                    <option value="3 Nephi 17">3 Nephi 17</option>
+                                
+                                    <option value="Isaiah 65">Isaiah 65</option>
+                                
+                                    <option value="Isaiah 66">Isaiah 66</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "blue", "id": "Isaiah 1", "label": "Isaiah 1", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 387 \nVerse Count: 31 \nVerses with Bible Terms: 17 \nCross Reference Count: 12 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 12"}, {"color": "green", "id": "1 Nephi 19", "label": "1 Nephi 19", "shape": "dot", "title": "Word Count: 558  \nVerse Count: 24 \nVerses with Bible Terms: 23 \nCross Reference Count: 5 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 4"}, {"color": "green", "id": "2 Nephi 11", "label": "2 Nephi 11", "shape": "dot", "title": "Word Count: 145  \nVerse Count: 8 \nVerses with Bible Terms: 8 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "2 Nephi 13", "label": "2 Nephi 13", "shape": "dot", "title": "Word Count: 287  \nVerse Count: 26 \nVerses with Bible Terms: 15 \nCross Reference Count: 23 \n - Direct Quote: 19 \n - Shared Language: 1 \n - Similar Theme: 3"}, {"color": "green", "id": "2 Nephi 15", "label": "2 Nephi 15", "shape": "dot", "title": "Word Count: 422  \nVerse Count: 30 \nVerses with Bible Terms: 20 \nCross Reference Count: 30 \n - Direct Quote: 24 \n - Shared Language: 5 \n - Similar Theme: 1"}, {"color": "green", "id": "2 Nephi 19", "label": "2 Nephi 19", "shape": "dot", "title": "Word Count: 280  \nVerse Count: 21 \nVerses with Bible Terms: 19 \nCross Reference Count: 28 \n - Direct Quote: 21 \n - Shared Language: 4 \n - Similar Theme: 3"}, {"color": "green", "id": "2 Nephi 25", "label": "2 Nephi 25", "shape": "dot", "title": "Word Count: 778  \nVerse Count: 30 \nVerses with Bible Terms: 29 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 2"}, {"color": "green", "id": "2 Nephi 6", "label": "2 Nephi 6", "shape": "dot", "title": "Word Count: 394  \nVerse Count: 18 \nVerses with Bible Terms: 16 \nCross Reference Count: 12 \n - Direct Quote: 2 \n - Shared Language: 3 \n - Similar Theme: 7"}, {"color": "green", "id": "3 Nephi 20", "label": "3 Nephi 20", "shape": "dot", "title": "Word Count: 712  \nVerse Count: 46 \nVerses with Bible Terms: 32 \nCross Reference Count: 19 \n - Direct Quote: 11 \n - Shared Language: 1 \n - Similar Theme: 7"}, {"color": "green", "id": "Alma 60", "label": "Alma 60", "shape": "dot", "title": "Word Count: 795  \nVerse Count: 36 \nVerses with Bible Terms: 23 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Helaman 7", "label": "Helaman 7", "shape": "dot", "title": "Word Count: 522  \nVerse Count: 29 \nVerses with Bible Terms: 20 \nCross Reference Count: 4 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 4"}, {"color": "green", "id": "Mosiah 11", "label": "Mosiah 11", "shape": "dot", "title": "Word Count: 556  \nVerse Count: 29 \nVerses with Bible Terms: 20 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "blue", "id": "Isaiah 2", "label": "Isaiah 2", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 269 \nVerse Count: 22 \nVerses with Bible Terms: 18 \nCross Reference Count: 23 \n - Direct Quote: 15  \n - Shared Language: 4 \n - Similar Theme: 4"}, {"color": "green", "id": "2 Nephi 21", "label": "2 Nephi 21", "shape": "dot", "title": "Word Count: 249  \nVerse Count: 16 \nVerses with Bible Terms: 14 \nCross Reference Count: 22 \n - Direct Quote: 16 \n - Shared Language: 3 \n - Similar Theme: 3"}, {"color": "green", "id": "2 Nephi 8", "label": "2 Nephi 8", "shape": "dot", "title": "Word Count: 424  \nVerse Count: 25 \nVerses with Bible Terms: 16 \nCross Reference Count: 24 \n - Direct Quote: 14 \n - Shared Language: 2 \n - Similar Theme: 8"}, {"color": "green", "id": "3 Nephi 21", "label": "3 Nephi 21", "shape": "dot", "title": "Word Count: 531  \nVerse Count: 29 \nVerses with Bible Terms: 19 \nCross Reference Count: 9 \n - Direct Quote: 0 \n - Shared Language: 3 \n - Similar Theme: 6"}, {"color": "green", "id": "2 Nephi 12", "label": "2 Nephi 12", "shape": "dot", "title": "Word Count: 321  \nVerse Count: 22 \nVerses with Bible Terms: 18 \nCross Reference Count: 21 \n - Direct Quote: 15 \n - Shared Language: 5 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 3", "label": "Isaiah 3", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 281 \nVerse Count: 26 \nVerses with Bible Terms: 15 \nCross Reference Count: 21 \n - Direct Quote: 19  \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Alma 4", "label": "Alma 4", "shape": "dot", "title": "Word Count: 446  \nVerse Count: 20 \nVerses with Bible Terms: 17 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Alma 31", "label": "Alma 31", "shape": "dot", "title": "Word Count: 696  \nVerse Count: 38 \nVerses with Bible Terms: 32 \nCross Reference Count: 8 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 8"}, {"color": "blue", "id": "Isaiah 4", "label": "Isaiah 4", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 99 \nVerse Count: 6 \nVerses with Bible Terms: 6 \nCross Reference Count: 3 \n - Direct Quote: 2  \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "2 Nephi 23", "label": "2 Nephi 23", "shape": "dot", "title": "Word Count: 294  \nVerse Count: 22 \nVerses with Bible Terms: 15 \nCross Reference Count: 28 \n - Direct Quote: 22 \n - Shared Language: 2 \n - Similar Theme: 4"}, {"color": "green", "id": "2 Nephi 14", "label": "2 Nephi 14", "shape": "dot", "title": "Word Count: 98  \nVerse Count: 6 \nVerses with Bible Terms: 6 \nCross Reference Count: 6 \n - Direct Quote: 2 \n - Shared Language: 1 \n - Similar Theme: 3"}, {"color": "blue", "id": "Isaiah 5", "label": "Isaiah 5", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 424 \nVerse Count: 30 \nVerses with Bible Terms: 20 \nCross Reference Count: 44 \n - Direct Quote: 24  \n - Shared Language: 7 \n - Similar Theme: 13"}, {"color": "green", "id": "Moroni 7", "label": "Moroni 7", "shape": "dot", "title": "Word Count: 925  \nVerse Count: 48 \nVerses with Bible Terms: 42 \nCross Reference Count: 4 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 3"}, {"color": "green", "id": "Jacob 5", "label": "Jacob 5", "shape": "dot", "title": "Word Count: 1736  \nVerse Count: 77 \nVerses with Bible Terms: 45 \nCross Reference Count: 11 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 10"}, {"color": "green", "id": "Helaman 16", "label": "Helaman 16", "shape": "dot", "title": "Word Count: 442  \nVerse Count: 25 \nVerses with Bible Terms: 18 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "2 Nephi 29", "label": "2 Nephi 29", "shape": "dot", "title": "Word Count: 375  \nVerse Count: 14 \nVerses with Bible Terms: 12 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 2"}, {"color": "green", "id": "1 Nephi 22", "label": "1 Nephi 22", "shape": "dot", "title": "Word Count: 679  \nVerse Count: 31 \nVerses with Bible Terms: 29 \nCross Reference Count: 9 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 8"}, {"color": "green", "id": "2 Nephi 20", "label": "2 Nephi 20", "shape": "dot", "title": "Word Count: 424  \nVerse Count: 34 \nVerses with Bible Terms: 19 \nCross Reference Count: 41 \n - Direct Quote: 34 \n - Shared Language: 1 \n - Similar Theme: 6"}, {"color": "green", "id": "Helaman 15", "label": "Helaman 15", "shape": "dot", "title": "Word Count: 363  \nVerse Count: 17 \nVerses with Bible Terms: 14 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "2 Nephi 18", "label": "2 Nephi 18", "shape": "dot", "title": "Word Count: 272  \nVerse Count: 22 \nVerses with Bible Terms: 19 \nCross Reference Count: 28 \n - Direct Quote: 22 \n - Shared Language: 2 \n - Similar Theme: 4"}, {"color": "blue", "id": "Isaiah 6", "label": "Isaiah 6", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 176 \nVerse Count: 13 \nVerses with Bible Terms: 8 \nCross Reference Count: 15 \n - Direct Quote: 12  \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "2 Nephi 16", "label": "2 Nephi 16", "shape": "dot", "title": "Word Count: 177  \nVerse Count: 13 \nVerses with Bible Terms: 8 \nCross Reference Count: 13 \n - Direct Quote: 12 \n - Shared Language: 1 \n - Similar Theme: 0"}, {"color": "green", "id": "Alma 36", "label": "Alma 36", "shape": "dot", "title": "Word Count: 531  \nVerse Count: 30 \nVerses with Bible Terms: 23 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "Mosiah 27", "label": "Mosiah 27", "shape": "dot", "title": "Word Count: 696  \nVerse Count: 37 \nVerses with Bible Terms: 29 \nCross Reference Count: 9 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 8"}, {"color": "blue", "id": "Isaiah 7", "label": "Isaiah 7", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 351 \nVerse Count: 25 \nVerses with Bible Terms: 20 \nCross Reference Count: 81 \n - Direct Quote: 24  \n - Shared Language: 2 \n - Similar Theme: 55"}, {"color": "green", "id": "Alma 30", "label": "Alma 30", "shape": "dot", "title": "Word Count: 1181  \nVerse Count: 60 \nVerses with Bible Terms: 43 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Helaman 6", "label": "Helaman 6", "shape": "dot", "title": "Word Count: 778  \nVerse Count: 41 \nVerses with Bible Terms: 36 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Alma 8", "label": "Alma 8", "shape": "dot", "title": "Word Count: 577  \nVerse Count: 32 \nVerses with Bible Terms: 25 \nCross Reference Count: 4 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 4"}, {"color": "green", "id": "Alma 7", "label": "Alma 7", "shape": "dot", "title": "Word Count: 655  \nVerse Count: 27 \nVerses with Bible Terms: 22 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 1"}, {"color": "green", "id": "Alma 5", "label": "Alma 5", "shape": "dot", "title": "Word Count: 1273  \nVerse Count: 62 \nVerses with Bible Terms: 49 \nCross Reference Count: 7 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 7"}, {"color": "green", "id": "Alma 45", "label": "Alma 45", "shape": "dot", "title": "Word Count: 441  \nVerse Count: 24 \nVerses with Bible Terms: 16 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Alma 43", "label": "Alma 43", "shape": "dot", "title": "Word Count: 948  \nVerse Count: 54 \nVerses with Bible Terms: 38 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "Alma 35", "label": "Alma 35", "shape": "dot", "title": "Word Count: 283  \nVerse Count: 16 \nVerses with Bible Terms: 5 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Alma 32", "label": "Alma 32", "shape": "dot", "title": "Word Count: 835  \nVerse Count: 43 \nVerses with Bible Terms: 30 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Mosiah 17", "label": "Mosiah 17", "shape": "dot", "title": "Word Count: 290  \nVerse Count: 20 \nVerses with Bible Terms: 10 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Alma 10", "label": "Alma 10", "shape": "dot", "title": "Word Count: 621  \nVerse Count: 32 \nVerses with Bible Terms: 24 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Alma 24", "label": "Alma 24", "shape": "dot", "title": "Word Count: 651  \nVerse Count: 30 \nVerses with Bible Terms: 28 \nCross Reference Count: 4 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 4"}, {"color": "green", "id": "Alma 2", "label": "Alma 2", "shape": "dot", "title": "Word Count: 605  \nVerse Count: 38 \nVerses with Bible Terms: 18 \nCross Reference Count: 4 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 4"}, {"color": "green", "id": "Alma 17", "label": "Alma 17", "shape": "dot", "title": "Word Count: 790  \nVerse Count: 39 \nVerses with Bible Terms: 27 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Alma 33", "label": "Alma 33", "shape": "dot", "title": "Word Count: 420  \nVerse Count: 23 \nVerses with Bible Terms: 16 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Mosiah 18", "label": "Mosiah 18", "shape": "dot", "title": "Word Count: 586  \nVerse Count: 35 \nVerses with Bible Terms: 27 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Mosiah 24", "label": "Mosiah 24", "shape": "dot", "title": "Word Count: 407  \nVerse Count: 25 \nVerses with Bible Terms: 12 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "Alma 14", "label": "Alma 14", "shape": "dot", "title": "Word Count: 664  \nVerse Count: 29 \nVerses with Bible Terms: 22 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "2 Nephi 17", "label": "2 Nephi 17", "shape": "dot", "title": "Word Count: 349  \nVerse Count: 25 \nVerses with Bible Terms: 20 \nCross Reference Count: 27 \n - Direct Quote: 24 \n - Shared Language: 3 \n - Similar Theme: 0"}, {"color": "green", "id": "Mosiah 23", "label": "Mosiah 23", "shape": "dot", "title": "Word Count: 500  \nVerse Count: 39 \nVerses with Bible Terms: 16 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "Alma 12", "label": "Alma 12", "shape": "dot", "title": "Word Count: 839  \nVerse Count: 37 \nVerses with Bible Terms: 29 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Mosiah 29", "label": "Mosiah 29", "shape": "dot", "title": "Word Count: 822  \nVerse Count: 47 \nVerses with Bible Terms: 28 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Mosiah 26", "label": "Mosiah 26", "shape": "dot", "title": "Word Count: 519  \nVerse Count: 39 \nVerses with Bible Terms: 27 \nCross Reference Count: 6 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 6"}, {"color": "green", "id": "Mosiah 25", "label": "Mosiah 25", "shape": "dot", "title": "Word Count: 344  \nVerse Count: 24 \nVerses with Bible Terms: 10 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Alma 1", "label": "Alma 1", "shape": "dot", "title": "Word Count: 644  \nVerse Count: 33 \nVerses with Bible Terms: 28 \nCross Reference Count: 6 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 5"}, {"color": "blue", "id": "Isaiah 8", "label": "Isaiah 8", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 269 \nVerse Count: 22 \nVerses with Bible Terms: 19 \nCross Reference Count: 26 \n - Direct Quote: 22  \n - Shared Language: 2 \n - Similar Theme: 2"}, {"color": "green", "id": "Jacob 4", "label": "Jacob 4", "shape": "dot", "title": "Word Count: 420  \nVerse Count: 18 \nVerses with Bible Terms: 16 \nCross Reference Count: 6 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 5"}, {"color": "blue", "id": "Isaiah 9", "label": "Isaiah 9", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 282 \nVerse Count: 21 \nVerses with Bible Terms: 19 \nCross Reference Count: 28 \n - Direct Quote: 21  \n - Shared Language: 2 \n - Similar Theme: 5"}, {"color": "green", "id": "Mosiah 15", "label": "Mosiah 15", "shape": "dot", "title": "Word Count: 481  \nVerse Count: 31 \nVerses with Bible Terms: 25 \nCross Reference Count: 14 \n - Direct Quote: 3 \n - Shared Language: 7 \n - Similar Theme: 4"}, {"color": "green", "id": "Mosiah 7", "label": "Mosiah 7", "shape": "dot", "title": "Word Count: 635  \nVerse Count: 33 \nVerses with Bible Terms: 21 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "2 Nephi 9", "label": "2 Nephi 9", "shape": "dot", "title": "Word Count: 1096  \nVerse Count: 54 \nVerses with Bible Terms: 50 \nCross Reference Count: 7 \n - Direct Quote: 1 \n - Shared Language: 1 \n - Similar Theme: 5"}, {"color": "green", "id": "Alma 11", "label": "Alma 11", "shape": "dot", "title": "Word Count: 646  \nVerse Count: 46 \nVerses with Bible Terms: 30 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "blue", "id": "Isaiah 10", "label": "Isaiah 10", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 422 \nVerse Count: 34 \nVerses with Bible Terms: 19 \nCross Reference Count: 42 \n - Direct Quote: 34  \n - Shared Language: 4 \n - Similar Theme: 4"}, {"color": "green", "id": "Omni 1", "label": "Omni 1", "shape": "dot", "title": "Word Count: 601  \nVerse Count: 30 \nVerses with Bible Terms: 20 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "Mosiah 4", "label": "Mosiah 4", "shape": "dot", "title": "Word Count: 695  \nVerse Count: 30 \nVerses with Bible Terms: 22 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "2 Nephi 24", "label": "2 Nephi 24", "shape": "dot", "title": "Word Count: 441  \nVerse Count: 32 \nVerses with Bible Terms: 24 \nCross Reference Count: 37 \n - Direct Quote: 32 \n - Shared Language: 1 \n - Similar Theme: 4"}, {"color": "blue", "id": "Isaiah 11", "label": "Isaiah 11", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 248 \nVerse Count: 16 \nVerses with Bible Terms: 14 \nCross Reference Count: 31 \n - Direct Quote: 22  \n - Shared Language: 2 \n - Similar Theme: 7"}, {"color": "green", "id": "1 Nephi 21", "label": "1 Nephi 21", "shape": "dot", "title": "Word Count: 452  \nVerse Count: 26 \nVerses with Bible Terms: 17 \nCross Reference Count: 30 \n - Direct Quote: 16 \n - Shared Language: 6 \n - Similar Theme: 8"}, {"color": "green", "id": "1 Nephi 1", "label": "1 Nephi 1", "shape": "dot", "title": "Word Count: 414  \nVerse Count: 20 \nVerses with Bible Terms: 17 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "2 Nephi 10", "label": "2 Nephi 10", "shape": "dot", "title": "Word Count: 433  \nVerse Count: 25 \nVerses with Bible Terms: 23 \nCross Reference Count: 9 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 9"}, {"color": "green", "id": "2 Nephi 30", "label": "2 Nephi 30", "shape": "dot", "title": "Word Count: 344  \nVerse Count: 18 \nVerses with Bible Terms: 15 \nCross Reference Count: 7 \n - Direct Quote: 6 \n - Shared Language: 1 \n - Similar Theme: 0"}, {"color": "green", "id": "2 Nephi 7", "label": "2 Nephi 7", "shape": "dot", "title": "Word Count: 183  \nVerse Count: 11 \nVerses with Bible Terms: 10 \nCross Reference Count: 9 \n - Direct Quote: 5 \n - Shared Language: 1 \n - Similar Theme: 3"}, {"color": "green", "id": "3 Nephi 16", "label": "3 Nephi 16", "shape": "dot", "title": "Word Count: 383  \nVerse Count: 20 \nVerses with Bible Terms: 19 \nCross Reference Count: 5 \n - Direct Quote: 3 \n - Shared Language: 1 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 12", "label": "Isaiah 12", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 74 \nVerse Count: 6 \nVerses with Bible Terms: 5 \nCross Reference Count: 6 \n - Direct Quote: 6  \n - Shared Language: 0 \n - Similar Theme: 0"}, {"color": "green", "id": "2 Nephi 22", "label": "2 Nephi 22", "shape": "dot", "title": "Word Count: 74  \nVerse Count: 6 \nVerses with Bible Terms: 5 \nCross Reference Count: 7 \n - Direct Quote: 6 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 13", "label": "Isaiah 13", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 289 \nVerse Count: 22 \nVerses with Bible Terms: 15 \nCross Reference Count: 23 \n - Direct Quote: 22  \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 14", "label": "Isaiah 14", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 423 \nVerse Count: 32 \nVerses with Bible Terms: 25 \nCross Reference Count: 37 \n - Direct Quote: 32  \n - Shared Language: 0 \n - Similar Theme: 5"}, {"color": "green", "id": "Ether 14", "label": "Ether 14", "shape": "dot", "title": "Word Count: 519  \nVerse Count: 31 \nVerses with Bible Terms: 9 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "2 Nephi 2", "label": "2 Nephi 2", "shape": "dot", "title": "Word Count: 667  \nVerse Count: 30 \nVerses with Bible Terms: 27 \nCross Reference Count: 4 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 4"}, {"color": "blue", "id": "Isaiah 17", "label": "Isaiah 17", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 215 \nVerse Count: 14 \nVerses with Bible Terms: 11 \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 18", "label": "Isaiah 18", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 128 \nVerse Count: 7 \nVerses with Bible Terms: 4 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "blue", "id": "Isaiah 19", "label": "Isaiah 19", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 357 \nVerse Count: 25 \nVerses with Bible Terms: 21 \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 0"}, {"color": "blue", "id": "Isaiah 21", "label": "Isaiah 21", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 204 \nVerse Count: 17 \nVerses with Bible Terms: 11 \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 22", "label": "Isaiah 22", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 334 \nVerse Count: 25 \nVerses with Bible Terms: 18 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "2 Nephi 28", "label": "2 Nephi 28", "shape": "dot", "title": "Word Count: 576  \nVerse Count: 32 \nVerses with Bible Terms: 27 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 24", "label": "Isaiah 24", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 280 \nVerse Count: 23 \nVerses with Bible Terms: 15 \nCross Reference Count: 5 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 4"}, {"color": "green", "id": "3 Nephi 25", "label": "3 Nephi 25", "shape": "dot", "title": "Word Count: 85  \nVerse Count: 6 \nVerses with Bible Terms: 5 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Jacob 6", "label": "Jacob 6", "shape": "dot", "title": "Word Count: 248  \nVerse Count: 13 \nVerses with Bible Terms: 11 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "2 Nephi 27", "label": "2 Nephi 27", "shape": "dot", "title": "Word Count: 679  \nVerse Count: 35 \nVerses with Bible Terms: 28 \nCross Reference Count: 19 \n - Direct Quote: 6 \n - Shared Language: 9 \n - Similar Theme: 4"}, {"color": "blue", "id": "Isaiah 25", "label": "Isaiah 25", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 181 \nVerse Count: 12 \nVerses with Bible Terms: 9 \nCross Reference Count: 5 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 4"}, {"color": "green", "id": "Mosiah 16", "label": "Mosiah 16", "shape": "dot", "title": "Word Count: 244  \nVerse Count: 15 \nVerses with Bible Terms: 15 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Mormon 7", "label": "Mormon 7", "shape": "dot", "title": "Word Count: 215  \nVerse Count: 10 \nVerses with Bible Terms: 10 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Alma 22", "label": "Alma 22", "shape": "dot", "title": "Word Count: 815  \nVerse Count: 35 \nVerses with Bible Terms: 27 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 26", "label": "Isaiah 26", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 276 \nVerse Count: 21 \nVerses with Bible Terms: 14 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "Mosiah 13", "label": "Mosiah 13", "shape": "dot", "title": "Word Count: 485  \nVerse Count: 35 \nVerses with Bible Terms: 24 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Helaman 3", "label": "Helaman 3", "shape": "dot", "title": "Word Count: 680  \nVerse Count: 37 \nVerses with Bible Terms: 25 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Alma 40", "label": "Alma 40", "shape": "dot", "title": "Word Count: 475  \nVerse Count: 26 \nVerses with Bible Terms: 25 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "blue", "id": "Isaiah 27", "label": "Isaiah 27", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 188 \nVerse Count: 13 \nVerses with Bible Terms: 8 \nCross Reference Count: 4 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 4"}, {"color": "green", "id": "Ether 13", "label": "Ether 13", "shape": "dot", "title": "Word Count: 522  \nVerse Count: 31 \nVerses with Bible Terms: 22 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 28", "label": "Isaiah 28", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 386 \nVerse Count: 29 \nVerses with Bible Terms: 19 \nCross Reference Count: 4 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 2"}, {"color": "green", "id": "Helaman 5", "label": "Helaman 5", "shape": "dot", "title": "Word Count: 902  \nVerse Count: 52 \nVerses with Bible Terms: 34 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 29", "label": "Isaiah 29", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 354 \nVerse Count: 24 \nVerses with Bible Terms: 17 \nCross Reference Count: 29 \n - Direct Quote: 6  \n - Shared Language: 13 \n - Similar Theme: 10"}, {"color": "green", "id": "Moroni 10", "label": "Moroni 10", "shape": "dot", "title": "Word Count: 539  \nVerse Count: 34 \nVerses with Bible Terms: 26 \nCross Reference Count: 4 \n - Direct Quote: 0 \n - Shared Language: 2 \n - Similar Theme: 2"}, {"color": "green", "id": "Mormon 8", "label": "Mormon 8", "shape": "dot", "title": "Word Count: 786  \nVerse Count: 41 \nVerses with Bible Terms: 31 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "1 Nephi 14", "label": "1 Nephi 14", "shape": "dot", "title": "Word Count: 577  \nVerse Count: 30 \nVerses with Bible Terms: 24 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "2 Nephi 33", "label": "2 Nephi 33", "shape": "dot", "title": "Word Count: 287  \nVerse Count: 15 \nVerses with Bible Terms: 15 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "2 Nephi 3", "label": "2 Nephi 3", "shape": "dot", "title": "Word Count: 579  \nVerse Count: 25 \nVerses with Bible Terms: 24 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 1"}, {"color": "green", "id": "2 Nephi 26", "label": "2 Nephi 26", "shape": "dot", "title": "Word Count: 682  \nVerse Count: 33 \nVerses with Bible Terms: 30 \nCross Reference Count: 5 \n - Direct Quote: 0 \n - Shared Language: 4 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 30", "label": "Isaiah 30", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 521 \nVerse Count: 33 \nVerses with Bible Terms: 26 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 2"}, {"color": "green", "id": "Helaman 13", "label": "Helaman 13", "shape": "dot", "title": "Word Count: 852  \nVerse Count: 39 \nVerses with Bible Terms: 37 \nCross Reference Count: 4 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 4"}, {"color": "blue", "id": "Isaiah 31", "label": "Isaiah 31", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 146 \nVerse Count: 9 \nVerses with Bible Terms: 9 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "blue", "id": "Isaiah 32", "label": "Isaiah 32", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 235 \nVerse Count: 20 \nVerses with Bible Terms: 7 \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0"}, {"color": "blue", "id": "Isaiah 33", "label": "Isaiah 33", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 322 \nVerse Count: 24 \nVerses with Bible Terms: 14 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "Mosiah 12", "label": "Mosiah 12", "shape": "dot", "title": "Word Count: 623  \nVerse Count: 37 \nVerses with Bible Terms: 25 \nCross Reference Count: 7 \n - Direct Quote: 4 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "blue", "id": "Isaiah 34", "label": "Isaiah 34", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 257 \nVerse Count: 17 \nVerses with Bible Terms: 14 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 2"}, {"color": "blue", "id": "Isaiah 35", "label": "Isaiah 35", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 140 \nVerse Count: 10 \nVerses with Bible Terms: 6 \nCross Reference Count: 5 \n - Direct Quote: 1  \n - Shared Language: 0 \n - Similar Theme: 4"}, {"color": "green", "id": "Mormon 3", "label": "Mormon 3", "shape": "dot", "title": "Word Count: 399  \nVerse Count: 22 \nVerses with Bible Terms: 18 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 36", "label": "Isaiah 36", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 339 \nVerse Count: 22 \nVerses with Bible Terms: 19 \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0"}, {"color": "blue", "id": "Isaiah 37", "label": "Isaiah 37", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 559 \nVerse Count: 38 \nVerses with Bible Terms: 33 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "blue", "id": "Isaiah 38", "label": "Isaiah 38", "shape": "dot", "title": "Proto-Isaiah \nWord Count: 289 \nVerse Count: 22 \nVerses with Bible Terms: 18 \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Helaman 12", "label": "Helaman 12", "shape": "dot", "title": "Word Count: 404  \nVerse Count: 26 \nVerses with Bible Terms: 17 \nCross Reference Count: 6 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 5"}, {"color": "blue", "id": "Isaiah 40", "label": "Isaiah 40", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 380 \nVerse Count: 31 \nVerses with Bible Terms: 21 \nCross Reference Count: 9 \n - Direct Quote: 0  \n - Shared Language: 3 \n - Similar Theme: 6"}, {"color": "green", "id": "1 Nephi 10", "label": "1 Nephi 10", "shape": "dot", "title": "Word Count: 414  \nVerse Count: 22 \nVerses with Bible Terms: 16 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 0"}, {"color": "green", "id": "1 Nephi 15", "label": "1 Nephi 15", "shape": "dot", "title": "Word Count: 649  \nVerse Count: 36 \nVerses with Bible Terms: 28 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "3 Nephi 22", "label": "3 Nephi 22", "shape": "dot", "title": "Word Count: 271  \nVerse Count: 17 \nVerses with Bible Terms: 14 \nCross Reference Count: 21 \n - Direct Quote: 17 \n - Shared Language: 1 \n - Similar Theme: 3"}, {"color": "green", "id": "Helaman 14", "label": "Helaman 14", "shape": "dot", "title": "Word Count: 596  \nVerse Count: 31 \nVerses with Bible Terms: 22 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 0"}, {"color": "blue", "id": "Isaiah 41", "label": "Isaiah 41", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 401 \nVerse Count: 29 \nVerses with Bible Terms: 17 \nCross Reference Count: 6 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 5"}, {"color": "green", "id": "1 Nephi 20", "label": "1 Nephi 20", "shape": "dot", "title": "Word Count: 333  \nVerse Count: 22 \nVerses with Bible Terms: 12 \nCross Reference Count: 22 \n - Direct Quote: 9 \n - Shared Language: 7 \n - Similar Theme: 6"}, {"color": "blue", "id": "Isaiah 42", "label": "Isaiah 42", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 314 \nVerse Count: 25 \nVerses with Bible Terms: 17 \nCross Reference Count: 8 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 6"}, {"color": "green", "id": "1 Nephi 13", "label": "1 Nephi 13", "shape": "dot", "title": "Word Count: 872  \nVerse Count: 42 \nVerses with Bible Terms: 36 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 43", "label": "Isaiah 43", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 351 \nVerse Count: 28 \nVerses with Bible Terms: 20 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 2"}, {"color": "blue", "id": "Isaiah 44", "label": "Isaiah 44", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 429 \nVerse Count: 28 \nVerses with Bible Terms: 24 \nCross Reference Count: 12 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 10"}, {"color": "green", "id": "1 Nephi 17", "label": "1 Nephi 17", "shape": "dot", "title": "Word Count: 1109  \nVerse Count: 55 \nVerses with Bible Terms: 43 \nCross Reference Count: 5 \n - Direct Quote: 0 \n - Shared Language: 2 \n - Similar Theme: 3"}, {"color": "green", "id": "3 Nephi 19", "label": "3 Nephi 19", "shape": "dot", "title": "Word Count: 523  \nVerse Count: 36 \nVerses with Bible Terms: 23 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 45", "label": "Isaiah 45", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 390 \nVerse Count: 25 \nVerses with Bible Terms: 23 \nCross Reference Count: 20 \n - Direct Quote: 0  \n - Shared Language: 3 \n - Similar Theme: 17"}, {"color": "green", "id": "Mosiah 3", "label": "Mosiah 3", "shape": "dot", "title": "Word Count: 555  \nVerse Count: 27 \nVerses with Bible Terms: 24 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "Ether 4", "label": "Ether 4", "shape": "dot", "title": "Word Count: 378  \nVerse Count: 19 \nVerses with Bible Terms: 15 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Alma 34", "label": "Alma 34", "shape": "dot", "title": "Word Count: 723  \nVerse Count: 41 \nVerses with Bible Terms: 33 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "3 Nephi 13", "label": "3 Nephi 13", "shape": "dot", "title": "Word Count: 420  \nVerse Count: 34 \nVerses with Bible Terms: 19 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "Alma 26", "label": "Alma 26", "shape": "dot", "title": "Word Count: 751  \nVerse Count: 37 \nVerses with Bible Terms: 31 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "3 Nephi 11", "label": "3 Nephi 11", "shape": "dot", "title": "Word Count: 612  \nVerse Count: 41 \nVerses with Bible Terms: 24 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 46", "label": "Isaiah 46", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 150 \nVerse Count: 13 \nVerses with Bible Terms: 7 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "blue", "id": "Isaiah 48", "label": "Isaiah 48", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 299 \nVerse Count: 22 \nVerses with Bible Terms: 11 \nCross Reference Count: 15 \n - Direct Quote: 9  \n - Shared Language: 4 \n - Similar Theme: 2"}, {"color": "green", "id": "Alma 37", "label": "Alma 37", "shape": "dot", "title": "Word Count: 956  \nVerse Count: 47 \nVerses with Bible Terms: 38 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "green", "id": "1 Nephi 9", "label": "1 Nephi 9", "shape": "dot", "title": "Word Count: 110  \nVerse Count: 6 \nVerses with Bible Terms: 4 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 49", "label": "Isaiah 49", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 422 \nVerse Count: 26 \nVerses with Bible Terms: 15 \nCross Reference Count: 29 \n - Direct Quote: 18  \n - Shared Language: 3 \n - Similar Theme: 8"}, {"color": "green", "id": "3 Nephi 23", "label": "3 Nephi 23", "shape": "dot", "title": "Word Count: 183  \nVerse Count: 14 \nVerses with Bible Terms: 10 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 50", "label": "Isaiah 50", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 165 \nVerse Count: 11 \nVerses with Bible Terms: 10 \nCross Reference Count: 8 \n - Direct Quote: 5  \n - Shared Language: 1 \n - Similar Theme: 2"}, {"color": "blue", "id": "Isaiah 51", "label": "Isaiah 51", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 390 \nVerse Count: 23 \nVerses with Bible Terms: 14 \nCross Reference Count: 20 \n - Direct Quote: 11  \n - Shared Language: 1 \n - Similar Theme: 8"}, {"color": "blue", "id": "Isaiah 52", "label": "Isaiah 52", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 215 \nVerse Count: 15 \nVerses with Bible Terms: 11 \nCross Reference Count: 40 \n - Direct Quote: 23  \n - Shared Language: 12 \n - Similar Theme: 5"}, {"color": "blue", "id": "Isaiah 53", "label": "Isaiah 53", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 160 \nVerse Count: 12 \nVerses with Bible Terms: 8 \nCross Reference Count: 27 \n - Direct Quote: 11  \n - Shared Language: 5 \n - Similar Theme: 11"}, {"color": "green", "id": "Mosiah 14", "label": "Mosiah 14", "shape": "dot", "title": "Word Count: 164  \nVerse Count: 12 \nVerses with Bible Terms: 8 \nCross Reference Count: 12 \n - Direct Quote: 11 \n - Shared Language: 1 \n - Similar Theme: 0"}, {"color": "green", "id": "Helaman 8", "label": "Helaman 8", "shape": "dot", "title": "Word Count: 560  \nVerse Count: 28 \nVerses with Bible Terms: 25 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 54", "label": "Isaiah 54", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 263 \nVerse Count: 17 \nVerses with Bible Terms: 14 \nCross Reference Count: 26 \n - Direct Quote: 17  \n - Shared Language: 1 \n - Similar Theme: 8"}, {"color": "green", "id": "Jacob 2", "label": "Jacob 2", "shape": "dot", "title": "Word Count: 625  \nVerse Count: 35 \nVerses with Bible Terms: 29 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 55", "label": "Isaiah 55", "shape": "dot", "title": "Deutero-Isaiah \nWord Count: 196 \nVerse Count: 13 \nVerses with Bible Terms: 10 \nCross Reference Count: 12 \n - Direct Quote: 1  \n - Shared Language: 4 \n - Similar Theme: 7"}, {"color": "green", "id": "3 Nephi 12", "label": "3 Nephi 12", "shape": "dot", "title": "Word Count: 627  \nVerse Count: 48 \nVerses with Bible Terms: 26 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Ether 3", "label": "Ether 3", "shape": "dot", "title": "Word Count: 597  \nVerse Count: 28 \nVerses with Bible Terms: 24 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 57", "label": "Isaiah 57", "shape": "dot", "title": "Trito-Isaiah \nWord Count: 300 \nVerse Count: 21 \nVerses with Bible Terms: 9 \nCross Reference Count: 4 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 4"}, {"color": "green", "id": "Alma 41", "label": "Alma 41", "shape": "dot", "title": "Word Count: 310  \nVerse Count: 15 \nVerses with Bible Terms: 8 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 2"}, {"color": "blue", "id": "Isaiah 58", "label": "Isaiah 58", "shape": "dot", "title": "Trito-Isaiah \nWord Count: 276 \nVerse Count: 14 \nVerses with Bible Terms: 12 \nCross Reference Count: 9 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 9"}, {"color": "green", "id": "Alma 29", "label": "Alma 29", "shape": "dot", "title": "Word Count: 305  \nVerse Count: 17 \nVerses with Bible Terms: 12 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "2 Nephi 1", "label": "2 Nephi 1", "shape": "dot", "title": "Word Count: 710  \nVerse Count: 32 \nVerses with Bible Terms: 23 \nCross Reference Count: 3 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "green", "id": "3 Nephi 18", "label": "3 Nephi 18", "shape": "dot", "title": "Word Count: 617  \nVerse Count: 39 \nVerses with Bible Terms: 24 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 59", "label": "Isaiah 59", "shape": "dot", "title": "Trito-Isaiah \nWord Count: 277 \nVerse Count: 21 \nVerses with Bible Terms: 15 \nCross Reference Count: 21 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 21"}, {"color": "green", "id": "Alma 39", "label": "Alma 39", "shape": "dot", "title": "Word Count: 370  \nVerse Count: 19 \nVerses with Bible Terms: 16 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Alma 42", "label": "Alma 42", "shape": "dot", "title": "Word Count: 578  \nVerse Count: 31 \nVerses with Bible Terms: 24 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "3 Nephi 24", "label": "3 Nephi 24", "shape": "dot", "title": "Word Count: 282  \nVerse Count: 18 \nVerses with Bible Terms: 17 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "green", "id": "Alma 9", "label": "Alma 9", "shape": "dot", "title": "Word Count: 643  \nVerse Count: 34 \nVerses with Bible Terms: 25 \nCross Reference Count: 2 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 1"}, {"color": "green", "id": "3 Nephi 9", "label": "3 Nephi 9", "shape": "dot", "title": "Word Count: 395  \nVerse Count: 22 \nVerses with Bible Terms: 18 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 0 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 60", "label": "Isaiah 60", "shape": "dot", "title": "Trito-Isaiah \nWord Count: 382 \nVerse Count: 22 \nVerses with Bible Terms: 18 \nCross Reference Count: 12 \n - Direct Quote: 0  \n - Shared Language: 4 \n - Similar Theme: 8"}, {"color": "green", "id": "Ether 2", "label": "Ether 2", "shape": "dot", "title": "Word Count: 611  \nVerse Count: 25 \nVerses with Bible Terms: 22 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 0"}, {"color": "blue", "id": "Isaiah 61", "label": "Isaiah 61", "shape": "dot", "title": "Trito-Isaiah \nWord Count: 182 \nVerse Count: 11 \nVerses with Bible Terms: 9 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3"}, {"color": "blue", "id": "Isaiah 62", "label": "Isaiah 62", "shape": "dot", "title": "Trito-Isaiah \nWord Count: 193 \nVerse Count: 12 \nVerses with Bible Terms: 12 \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 1"}, {"color": "blue", "id": "Isaiah 64", "label": "Isaiah 64", "shape": "dot", "title": "Trito-Isaiah \nWord Count: 165 \nVerse Count: 12 \nVerses with Bible Terms: 10 \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 2"}, {"color": "green", "id": "3 Nephi 17", "label": "3 Nephi 17", "shape": "dot", "title": "Word Count: 375  \nVerse Count: 25 \nVerses with Bible Terms: 15 \nCross Reference Count: 1 \n - Direct Quote: 0 \n - Shared Language: 1 \n - Similar Theme: 0"}, {"color": "blue", "id": "Isaiah 65", "label": "Isaiah 65", "shape": "dot", "title": "Trito-Isaiah \nWord Count: 352 \nVerse Count: 25 \nVerses with Bible Terms: 19 \nCross Reference Count: 8 \n - Direct Quote: 0  \n - Shared Language: 3 \n - Similar Theme: 5"}, {"color": "blue", "id": "Isaiah 66", "label": "Isaiah 66", "shape": "dot", "title": "Trito-Isaiah \nWord Count: 379 \nVerse Count: 24 \nVerses with Bible Terms: 21 \nCross Reference Count: 5 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 3"}]);
+                  edges = new vis.DataSet([{"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 19", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 11", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 13", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 15", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 19", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 25", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 6", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 60", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 1", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 11", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 2", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 2", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 8", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 2", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 2", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 2", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 15", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 2", "title": "Proto-Isaiah \nCross Reference Count: 18 \n - Direct Quote: 15  \n - Shared Language: 3 \n - Similar Theme: 0", "to": "2 Nephi 12", "width": 6.0}, {"color": "gray", "from": "Isaiah 3", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 4", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 3", "title": "Proto-Isaiah \nCross Reference Count: 19 \n - Direct Quote: 19  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 13", "width": 6.333333333333333}, {"color": "gray", "from": "Isaiah 3", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 31", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 4", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 23", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 4", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 2  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 14", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Moroni 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 7 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 6", "to": "Jacob 5", "width": 2.3333333333333335}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 16", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 29", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 13", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 25 \n - Direct Quote: 24  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 15", "width": 8.333333333333334}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 0", "to": "2 Nephi 19", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 15", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "3 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 5", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 18", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 6", "title": "Proto-Isaiah \nCross Reference Count: 12 \n - Direct Quote: 12  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 16", "width": 4.0}, {"color": "gray", "from": "Isaiah 6", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Alma 36", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 6", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 27", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 30", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 6", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 4 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 4", "to": "Alma 8", "width": 1.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Alma 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Alma 5", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Alma 45", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 43", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Alma 35", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 32", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Mosiah 17", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 4 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 4", "to": "Alma 31", "width": 1.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 10", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 24", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 4 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 4", "to": "Alma 2", "width": 1.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 17", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 33", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Mosiah 18", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Mosiah 24", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 14", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 15", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 24 \n - Direct Quote: 24  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 17", "width": 8.0}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Mosiah 23", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 18", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 19", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Alma 12", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 29", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3", "to": "Mosiah 27", "width": 1.0}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 6 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 6", "to": "Mosiah 26", "width": 2.0}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Mosiah 25", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 7", "title": "Proto-Isaiah \nCross Reference Count: 4 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 4", "to": "Alma 1", "width": 1.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 8", "title": "Proto-Isaiah \nCross Reference Count: 22 \n - Direct Quote: 22  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 18", "width": 7.333333333333333}, {"color": "gray", "from": "Isaiah 8", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 19", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 8", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 8", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 0", "to": "2 Nephi 17", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 9", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Mosiah 15", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 9", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 9", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 13", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 9", "title": "Proto-Isaiah \nCross Reference Count: 21 \n - Direct Quote: 21  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 19", "width": 7.0}, {"color": "gray", "from": "Isaiah 9", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 9", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 9", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 9", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 11", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 9", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 5", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 10", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 18", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 10", "title": "Proto-Isaiah \nCross Reference Count: 34 \n - Direct Quote: 34  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 20", "width": 11.333333333333334}, {"color": "gray", "from": "Isaiah 10", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 0", "to": "2 Nephi 19", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 10", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Omni 1", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 10", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 15", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 10", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 10", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 24", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 20", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 16 \n - Direct Quote: 16  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 21", "width": 5.333333333333333}, {"color": "gray", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 1", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 10", "width": 0.6666666666666666}, {"color": "lightskyblue", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 6 \n - Direct Quote: 6  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 30", "width": 2.0}, {"color": "gray", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 6", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "3 Nephi 16", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 11", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 29", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 12", "title": "Proto-Isaiah \nCross Reference Count: 6 \n - Direct Quote: 6  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 22", "width": 2.0}, {"color": "gray", "from": "Isaiah 13", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 8", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 13", "title": "Proto-Isaiah \nCross Reference Count: 22 \n - Direct Quote: 22  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 23", "width": 7.333333333333333}, {"color": "lightskyblue", "from": "Isaiah 14", "title": "Proto-Isaiah \nCross Reference Count: 32 \n - Direct Quote: 32  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 24", "width": 10.666666666666666}, {"color": "gray", "from": "Isaiah 14", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 9", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 14", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Ether 14", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 14", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 2", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 14", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 23", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 14", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 17", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 18", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 18", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 18", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 19", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 19", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 16", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 21", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 23", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 22", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 13", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 22", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 31", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 22", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 28", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 24", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 1", "to": "2 Nephi 23", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 24", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 25", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 24", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 6", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 24", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 27", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 25", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 16", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 25", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mormon 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 25", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 25", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 14", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 25", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 26", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 13", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 26", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 3", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 26", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 40", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 27", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 8", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 27", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Ether 13", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 27", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Jacob 5", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 28", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 28", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 28", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 28", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 5", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 28", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Jacob 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Moroni 10", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mormon 8", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 14", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 8", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 33", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 3", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 17 \n - Direct Quote: 6  \n - Shared Language: 8 \n - Similar Theme: 3", "to": "2 Nephi 27", "width": 5.666666666666667}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 31", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 1", "to": "2 Nephi 26", "width": 1.0}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 25", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 29", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 30", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 18", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 30", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 30", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 13", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 31", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 18", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 31", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Alma 43", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 32", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 15", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 33", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 33", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 27", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 33", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Omni 1", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 34", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 23", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 34", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 24", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 34", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 35", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mormon 3", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 35", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 21", "width": 0.3333333333333333}, {"color": "lightskyblue", "from": "Isaiah 35", "title": "Proto-Isaiah \nCross Reference Count: 3 \n - Direct Quote: 1  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 8", "width": 1.0}, {"color": "gray", "from": "Isaiah 36", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 17", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 37", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 37", "title": "Proto-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 20", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 38", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 38", "title": "Proto-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 27", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 40", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "1 Nephi 10", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 40", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 15", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 40", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "1 Nephi 19", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 40", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 6", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 40", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 8", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 40", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 40", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 40", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 29", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 40", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Helaman 14", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 41", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 9", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 41", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 41", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 1", "to": "1 Nephi 21", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 41", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 41", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 10", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 42", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 0", "to": "1 Nephi 20", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 42", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 13", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 42", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "1 Nephi 15", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 42", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 10", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 42", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 3", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 42", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 43", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 43", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 43", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "1 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 17", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 19", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 11", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 6", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 9", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 16", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 0", "to": "1 Nephi 21", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 44", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 3", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 1", "to": "Moroni 7", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Ether 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 34", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 5", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 13", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 6", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 25", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 2", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 2", "to": "1 Nephi 20", "width": 1.0}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 1", "to": "1 Nephi 17", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 26", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 45", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 11", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 46", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 46", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 6", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 46", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 24", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 48", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 37", "width": 0.3333333333333333}, {"color": "crimson", "from": "Isaiah 48", "title": "Deutero-Isaiah \nCross Reference Count: 12 \n - Direct Quote: 9  \n - Shared Language: 3 \n - Similar Theme: 0", "to": "1 Nephi 20", "width": 4.0}, {"color": "gray", "from": "Isaiah 48", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 9", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 48", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 26", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 49", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 27", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 49", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 5", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 49", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 23", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 49", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 49", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 10", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 49", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 22", "width": 0.3333333333333333}, {"color": "crimson", "from": "Isaiah 49", "title": "Deutero-Isaiah \nCross Reference Count: 18 \n - Direct Quote: 16  \n - Shared Language: 2 \n - Similar Theme: 0", "to": "1 Nephi 21", "width": 6.0}, {"color": "gray", "from": "Isaiah 49", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 19", "width": 0.3333333333333333}, {"color": "crimson", "from": "Isaiah 49", "title": "Deutero-Isaiah \nCross Reference Count: 3 \n - Direct Quote: 2  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 6", "width": 1.0}, {"color": "gray", "from": "Isaiah 50", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 10", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 50", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 8", "width": 0.3333333333333333}, {"color": "crimson", "from": "Isaiah 50", "title": "Deutero-Isaiah \nCross Reference Count: 5 \n - Direct Quote: 5  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 7", "width": 1.6666666666666667}, {"color": "gray", "from": "Isaiah 50", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 19", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 51", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 33", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 51", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 51", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 10", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 51", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 29", "width": 0.3333333333333333}, {"color": "crimson", "from": "Isaiah 51", "title": "Deutero-Isaiah \nCross Reference Count: 11 \n - Direct Quote: 11  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "2 Nephi 8", "width": 3.6666666666666665}, {"color": "gray", "from": "Isaiah 51", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 51", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 40", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 51", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Helaman 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 51", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Moroni 10", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 3", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Mosiah 27", "width": 0.3333333333333333}, {"color": "crimson", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 7 \n - Direct Quote: 3  \n - Shared Language: 4 \n - Similar Theme: 0", "to": "Mosiah 15", "width": 2.3333333333333335}, {"color": "gray", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Moroni 10", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 13", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 0", "to": "3 Nephi 21", "width": 0.6666666666666666}, {"color": "crimson", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 12 \n - Direct Quote: 11  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "3 Nephi 20", "width": 4.0}, {"color": "crimson", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 4 \n - Direct Quote: 4  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "Mosiah 12", "width": 1.3333333333333333}, {"color": "crimson", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 4 \n - Direct Quote: 2  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 8", "width": 1.3333333333333333}, {"color": "gray", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "1 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "1 Nephi 13", "width": 0.3333333333333333}, {"color": "crimson", "from": "Isaiah 52", "title": "Deutero-Isaiah \nCross Reference Count: 3 \n - Direct Quote: 3  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "3 Nephi 16", "width": 1.0}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 3", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 4 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 2", "to": "Mosiah 15", "width": 1.3333333333333333}, {"color": "crimson", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 12 \n - Direct Quote: 11  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Mosiah 14", "width": 4.0}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Moroni 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 8", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 24", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 2", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 53", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 30", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Moroni 10", "width": 0.3333333333333333}, {"color": "crimson", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 17 \n - Direct Quote: 17  \n - Shared Language: 0 \n - Similar Theme: 0", "to": "3 Nephi 22", "width": 5.666666666666667}, {"color": "gray", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 15", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 18", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 17", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 2", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 54", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 3", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 24", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 26", "width": 0.3333333333333333}, {"color": "crimson", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 1  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 9", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Alma 1", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 24", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 37", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Ether 3", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 55", "title": "Deutero-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 57", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 41", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 57", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 24", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 57", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 57", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 14", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 58", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 34", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 58", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 27", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 58", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 23", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 58", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 4", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 58", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 1", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 58", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 29", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 58", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 13", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 58", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 1", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 58", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 18", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 41", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 39", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 42", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 24", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 60", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 9", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "Helaman 13", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 3 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 3", "to": "Alma 5", "width": 1.0}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Jacob 6", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 20", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 9", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 1", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 36", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 11", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Helaman 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 59", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 9", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 60", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "1 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 60", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 60", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 10", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 60", "title": "Trito-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 14", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 60", "title": "Trito-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 2", "to": "2 Nephi 24", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 60", "title": "Trito-Isaiah \nCross Reference Count: 2 \n - Direct Quote: 0  \n - Shared Language: 2 \n - Similar Theme: 0", "to": "2 Nephi 6", "width": 0.6666666666666666}, {"color": "gray", "from": "Isaiah 60", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 60", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Ether 2", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 60", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 19", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 61", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 14", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 61", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 61", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 62", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "3 Nephi 22", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 62", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 64", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "3 Nephi 17", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 64", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 11", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 64", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 15", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 65", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 1", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 65", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 65", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 30", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 65", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "2 Nephi 7", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 65", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 31", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 65", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Alma 5", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 65", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "Alma 9", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 65", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "Mosiah 12", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 66", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "1 Nephi 17", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 66", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "1 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 66", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 1 \n - Similar Theme: 0", "to": "2 Nephi 27", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 66", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 21", "width": 0.3333333333333333}, {"color": "gray", "from": "Isaiah 66", "title": "Trito-Isaiah \nCross Reference Count: 1 \n - Direct Quote: 0  \n - Shared Language: 0 \n - Similar Theme: 1", "to": "3 Nephi 25", "width": 0.3333333333333333}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"nodes": {"borderWidth": 1, "borderWidthSelected": 18, "font": {"size": 16, "strokeWidth": 3}}, "edges": {"scaling": {"min": 12, "max": 20}, "selectionWidth": 3.5, "selfReferenceSize": null, "selfReference": {"size": 24, "angle": 0.7853981633974483}, "smooth": true, "width": 14}, "interaction": {"keyboard": {"enabled": true}, "navigationButtons": true, "tooltipDelay": 100, "zoomSpeed": 0.7, "hover": true, "hoverConnected": true, "hoverDegree": 1, "selectable": true, "selectConnectedEdges": true}, "physics": {"repulsion": {"nodeDistance": 185, "damping": 0.06}, "minVelocity": 0.75, "solver": "repulsion"}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
