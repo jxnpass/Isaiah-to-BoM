@@ -8,10 +8,10 @@ import re
 
 import streamlit as st 
 
-ISH = pd.read_csv('../CleanData/ISH_summary.csv', index_col=0)
-BOM = pd.read_csv('../CleanData/BOM_summary.csv', index_col=0)
-cr_chapter = pd.read_csv('../CleanData/by_chapter_cross_ref.csv', index_col=0)
-cr_verse = pd.read_csv('../CleanData/by_verse_cross_ref.csv', index_col=0)
+ISH = pd.read_csv('CleanData/ISH_summary.csv', index_col=0)
+BOM = pd.read_csv('CleanData/BOM_summary.csv', index_col=0)
+cr_chapter = pd.read_csv('CleanData/by_chapter_cross_ref.csv', index_col=0)
+cr_verse = pd.read_csv('CleanData/by_verse_cross_ref.csv', index_col=0)
 
 # %%
 
