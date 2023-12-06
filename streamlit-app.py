@@ -216,19 +216,6 @@ st.markdown("""
             This dashboard aimed to provide an interactive experience whereby the casual learner or the scriptural expert can dive into the textual comparisons between Isaiah and the Book of Mormon. Structuring the vast question about the authenticity of the Book of Mormon in regards to Isaiah's writings within this dashboard will provide an interactive and meaningful experience to those wanting to learn more about the topic and the scriptures.   
             """)
 
-
-# %%
-
-
-
-
-# %%
-
-
-
-
-
-
 # %%
 
 repo_url = 'https://github.com/jxnpass/Isaiah-to-BoM/tree/main'
