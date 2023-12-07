@@ -28,27 +28,6 @@ st.markdown("""There are a few key words that need explanation before you dive i
             """)
 
 # %%
-st.header("Cross Reference Networks")
-st.markdown("The following links generate networks comparing the verse and chapter connections")
-ch_url = "https://jxnpass.github.io/assets/Isaiah-to-BOM/network-visuals/by_chapter.html"
-vs_url = "https://jxnpass.github.io/assets/Isaiah-to-BOM/network-visuals/by_verse.html"
-
-st.write("[Chapter Network](%s)" % ch_url)
-st.markdown("""
-* Width of the edge (lines) signify number of shared verses between chapters
-* Colored edges show which connections hold direct quotes. Blue edges are direct quotes from Proto-Isaiah, red edges are direct quotes from Deutero and Trito-Isaiah. Gray edges connect chapters with shared language or similar themes 
-""")
-st.write("[Verse Network](%s)" % vs_url)
-st.markdown("""
-* Loading the verse network takes about 20 seconds 
-* Black edges connect direct quotes
-* Dark gray edges connect verses with shared language 
-* Light gray edges connect verses with similar themes
-* You'll notice that Isaiah 7:14 is colored gold. I gave it special attneion because this verse is actually matched 55 times, but the network could not handle that many connections. I limited the network to only show those that had a similarity score greater than 0
-            """)
-
-
-# %%
 st.header("Cross Reference Interactive Investigation")
 
 st.markdown("""
