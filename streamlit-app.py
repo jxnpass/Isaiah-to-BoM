@@ -198,7 +198,7 @@ st.markdown("""
 # %%
 
 repo_url = 'https://github.com/jxnpass/Isaiah-to-BoM/tree/main'
-blog_url = 'https://jxnpass.github.io/2023/11/10/IsaiahToBOM.html'
+blog_url = 'https://jxnpass.github.io/2023/12/06/IsaiahToBOM-EDA.html'
 
 url1 = "https://www.streamlit.io"
 url2 = "https://medium.com/swlh/analyzing-references-in-bibles-verses-using-complex-networks-with-pandas-and-gephi-8a4edc52e7ab"
