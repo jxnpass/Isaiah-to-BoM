@@ -1,4 +1,4 @@
-This repository holds the code for my project "Exploring Isaiah's Legacy in the Book of Mormon", which is illustrated in two blogs, one that talks about [data collection](https://jxnpass.github.io/2023/12/05/IsaiahToBOM-DC.html#data-building), and the other about the [EDA](https://jxnpass.github.io/2023/12/06/IsaiahToBOM-EDA.html).
+This repository holds the code for my project "Exploring Isaiah's Legacy in the Book of Mormon", which is illustrated in two blogs, one that talks about [data collection](https://jxnpass.github.io/2023/12/05/IsaiahToBOM-DC.html), and the other about the [EDA](https://jxnpass.github.io/2023/12/06/IsaiahToBOM-EDA.html).
 
 I like to organize my repository and coding into steps. In the folder [Scripts](/Scripts/) there are six different Jupyter notebooks that perform different functions.
 
