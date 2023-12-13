@@ -19,11 +19,11 @@ st.title("Exploring Isaiah's Legacy in the Book of Mormon")
 
 # Introduction
 st.header("Introduction")
-st.markdown("This Streamlit Dashboard aims to provide an interactive element in discovering the connections between the Biblical prophet Isaiah and the Book of Mormon authors. Scholars regularly debate betwen linguistic and historical contexts regarding the Book of Mormon's usage of Isaiah. Use this dashboard to visualize the connections and comprehend the dilemma.")
-st.markdown("""There are a few key words that need explanation before you dive in:
+st.markdown("This Streamlit Dashboard aims to provide an interactive element in discovering the connections between the Biblical prophet Isaiah and the Book of Mormon authors. Use this dashboard to visualize any cross reference.")
+st.markdown("""A few key words to define before diving in:
 - The ***Duhms category*** refers to the section of Isaiah as ascribed by Bernhard Duhm. Proto-Isaiah refers to chapters 1-39 (742-687 BCE, from Isaiah's call to prophethood to a century before the Babylonian exile), Deutero-Isaiah refers to chapters 40-55 (597-538 BCE, allegedly written during King Cyrus conquest of Babylon), and Trito-Isaiah refers to chapters 56-66 (after 538 BCE, after the Jews returned to Jerusalem). The Book of Mormon peoples left Jerusalem after 597 BCE, and therefore would only have Proto-Isaiah in their records.
 - ***Similarity score*** is the language similarities between verses (calculated from python package textdistance.cosine), between 0 and 1. A detailed description on how calculating text similarities work can be found [here](https://www.newscatcherapi.com/blog/ultimate-guide-to-text-similarity-with-python).
-- ***Reference type*** is a categorized version of similarity score. The type of reference denoted between verses is determined by how similar verses are. Similarity scores between .75 and 1 were considered \"Direct Quote\", .25 to .75 had \"Shared Language\", and 0 to .25 had \"Similar Themes\". This process is based on subjective inference and do not reflect scholarly standards.
+- ***Reference type*** is a categorized version of similarity score. The type of reference denoted between verses is determined by how similar verses are. Similarity scores between .75 and 1 were considered \"Direct Quote\", .25 to .75 had \"Shared Language\", and 0 to .25 had \"Similar Themes\". This process is based on subjective inference and do not directly reflect scholarly interpretations.
 - ***Bible Term Verses*** identify if the verse contains an [LDS Bible Dictionary Term]("https://www.churchofjesuschrist.org/study/scriptures/bd?lang=eng").
             """)
 
@@ -129,6 +129,7 @@ bar_ch.update_traces(
 st.plotly_chart(bar_ch)
 
 # Table data
+
 ch_num = int(re.findall(r'\d+', select_chapter_number)[-1])
 
 if select_book == "Isaiah":
@@ -154,6 +155,9 @@ else:
 
 # st.markdown(ch_tb.style.hide(axis="index").to_html(), unsafe_allow_html=True)
 st.dataframe(ch_tb, hide_index = True, height = 200, width = 1000)
+st.markdown("""
+        The table above provides a list of verses that are direct quotes, have shared language, promote similar themess, with the selected chapter. It also lists all the verses within the chapter that have at least one bible dictionary term.
+""")
 
 # %%
 
